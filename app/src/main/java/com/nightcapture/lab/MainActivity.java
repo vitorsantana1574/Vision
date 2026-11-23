@@ -429,7 +429,7 @@ public final class MainActivity extends Activity {
                 synchronized(sampleLock){if(samples.length()<10000)samples.put(row);}
             }catch(Exception ignored){ }
             long now=System.currentTimeMillis();
-            if(photoReader!=null&&!recording&&r.getTargets().contains(photoReader.getSurface())){
+            if(photoReader!=null&&!recording&&Integer.valueOf(CameraMetadata.CONTROL_CAPTURE_INTENT_STILL_CAPTURE).equals(r.get(CaptureRequest.CONTROL_CAPTURE_INTENT))){
                 log("still_metadata","file="+pendingPhotoFileName+" ISO="+iso+" exposureNs="+exp);
             }
             if(now-lastHudMs>=650){
