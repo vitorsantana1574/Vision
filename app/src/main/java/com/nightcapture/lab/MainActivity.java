@@ -64,7 +64,7 @@ public final class MainActivity extends Activity {
     private TextureView preview;
     private TextView status, measurements;
     private EditText scene, isoBox, exposureBox;
-    private Spinner modeBox, resolutionBox, codecBox;
+    private Spinner modeBox, resolutionBox, codecBox, fpsBox;
     private Button startButton, stopButton, photoButton;
     private HandlerThread thread;
     private Handler background;
@@ -82,9 +82,10 @@ public final class MainActivity extends Activity {
     private Size recordingSize;
     private volatile boolean recording=false, starting=false;
     private boolean destroyed=false;
-    private int mode=0, selectedResolution=0, selectedCodec=0, selectedIso=1600;
+    private int mode=0, selectedResolution=0, selectedCodec=0, selectedIso=1600, selectedVideoFps=30;
     private double selectedExposureMs=50;
-    private String sceneTag="quarto", pendingExport;
+    private String sceneTag="quarto", pendingExport, pendingPhotoFileName, currentRecordingName;
+    private final Object sampleLock=new Object();
     private long frames=0,lastFrameNs=0,lastHudMs=0;
     private double instantFps=0;
     private final JSONArray samples=new JSONArray();
@@ -165,6 +166,10 @@ public final class MainActivity extends Activity {
         panel.addView(text("Codec do vídeo"));
         codecBox=spinner("H.264 / AVC","H.265 / HEVC");
         panel.addView(codecBox);
+        panel.addView(text("FPS real solicitado ao sensor e ao gravador"));
+        fpsBox=spinner("10 FPS (mais luz)","15 FPS (equilíbrio)","30 FPS (movimento)");
+        fpsBox.setSelection(2);
+        panel.addView(fpsBox);
         panel.addView(text("ISO manual (se Camera2 permitir)"));
         isoBox=new EditText(this);
         isoBox.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
@@ -207,6 +212,11 @@ public final class MainActivity extends Activity {
         mode=modeBox.getSelectedItemPosition();
         selectedResolution=resolutionBox.getSelectedItemPosition();
         selectedCodec=codecBox.getSelectedItemPosition();
+        selectedVideoFps=fpsBox.getSelectedItemPosition()==0?10:fpsBox.getSelectedItemPosition()==1?15:30;
+        if(mode==3&&!hasLowLightBoost()&&characteristics!=null){
+            mode=0;modeBox.setSelection(0);
+            toast("Low Light Boost não anunciado nesta câmera; modo Automático aplicado.");
+        }
         try { selectedIso=Integer.parseInt(isoBox.getText().toString()); } catch(Exception ignored) {selectedIso=1600;}
         try { selectedExposureMs=Double.parseDouble(exposureBox.getText().toString().replace(',','.')); }
         catch(Exception ignored) {selectedExposureMs=50;}
@@ -275,7 +285,7 @@ public final class MainActivity extends Activity {
         Size best=null;
         for(Size s:a){
             long p=(long)s.getWidth()*s.getHeight();
-            if(p>12_500_000)continue;
+            if(p>3_000_000||s.getWidth()>1920||s.getHeight()>1440)continue;
             if(best==null||p>(long)best.getWidth()*best.getHeight())best=s;
         }
         return best==null?a[0]:best;
@@ -298,6 +308,7 @@ public final class MainActivity extends Activity {
                 targets.add(recorder.getSurface());
             }else{
                 Size p=choosePhotoSize();
+                log("photo_stream_selected",p.getWidth()+"x"+p.getHeight());
                 photoReader=ImageReader.newInstance(p.getWidth(),p.getHeight(),ImageFormat.JPEG,2);
                 photoReader.setOnImageAvailableListener(r->savePhoto(r),background);
                 targets.add(photoReader.getSurface());
@@ -345,18 +356,9 @@ public final class MainActivity extends Activity {
     }
     private Range<Integer> preferredFps() {
         Range<Integer>[] a=characteristics.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES);
-        if(a==null||a.length==0||!(mode==1||mode==2))return null;
-        Range<Integer> best=null;
-        for(Range<Integer> r:a){
-            if(mode==1){
-                if(r.getUpper()<10)continue;
-                if(best==null||r.getUpper()<best.getUpper())best=r;
-            }else{
-                if(r.getLower()<24||r.getUpper()<30)continue;
-                if(best==null||r.getLower()>best.getLower())best=r;
-            }
-        }
-        return best;
+        if(a!=null)for(Range<Integer> r:a)
+            if(r.getLower()==selectedVideoFps&&r.getUpper()==selectedVideoFps)return r;
+        return null;
     }
     private CaptureRequest request(boolean video,boolean still) throws Exception {
         CaptureRequest.Builder b=camera.createCaptureRequest(still?CameraDevice.TEMPLATE_STILL_CAPTURE:
@@ -384,11 +386,18 @@ public final class MainActivity extends Activity {
             if(expRange!=null)exp=Math.max(expRange.getLower(),Math.min(exp,expRange.getUpper()));
             b.set(CaptureRequest.SENSOR_SENSITIVITY,iso);
             b.set(CaptureRequest.SENSOR_EXPOSURE_TIME,exp);
-            b.set(CaptureRequest.SENSOR_FRAME_DURATION,Math.max(exp,33_333_333L));
+            long frameNs=1_000_000_000L/selectedVideoFps;
+            if(video&&exp>frameNs){
+                log("manual_exposure_clamped",exp+" ns -> "+frameNs+" ns para "+selectedVideoFps+" FPS");
+                exp=frameNs;
+                b.set(CaptureRequest.SENSOR_EXPOSURE_TIME,exp);
+            }
+            b.set(CaptureRequest.SENSOR_FRAME_DURATION,Math.max(exp,frameNs));
         }else{
             b.set(CaptureRequest.CONTROL_AE_MODE,CameraMetadata.CONTROL_AE_MODE_ON);
             Range<Integer> fps=preferredFps();
             if(fps!=null)b.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE,fps);
+            else log("fps_range_fallback","Sem intervalo exato para "+selectedVideoFps+" FPS");
         }
         if(still){
             Integer orientation=characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
@@ -406,7 +415,7 @@ public final class MainActivity extends Activity {
             Integer llb=x.get(CaptureResult.CONTROL_LOW_LIGHT_BOOST_STATE);
             if(ts!=null&&lastFrameNs>0&&ts>lastFrameNs)instantFps=1_000_000_000.0/(ts-lastFrameNs);
             if(ts!=null)lastFrameNs=ts;
-            if(frames%5==0&&samples.length()<2400)try{
+            if(frames%5==0)try{
                 JSONObject row=new JSONObject();
                 row.put("time",System.currentTimeMillis());
                 row.put("sensorTimestampNs",ts);
@@ -417,9 +426,12 @@ public final class MainActivity extends Activity {
                 row.put("llbState",llb);
                 row.put("recording",recording);
                 row.put("mode",MODES[mode]);
-                samples.put(row);
+                synchronized(sampleLock){if(samples.length()<10000)samples.put(row);}
             }catch(Exception ignored){ }
             long now=System.currentTimeMillis();
+            if(photoReader!=null&&!recording&&r.getTargets().contains(photoReader.getSurface())){
+                log("still_metadata","file="+pendingPhotoFileName+" ISO="+iso+" exposureNs="+exp);
+            }
             if(now-lastHudMs>=650){
                 lastHudMs=now;
                 String hud=String.format(Locale.US,"ISO %s | %.1f ms | %.1f fps | LLB %s",
@@ -432,8 +444,10 @@ public final class MainActivity extends Activity {
     private void photo(){
         if(recording||starting||session==null||photoReader==null){toast("Aguarde a prévia.");return;}
         readControls();
-        try{session.capture(request(false,true),callback,background);log("photo_request",sceneTag+" "+MODES[mode]);}
-        catch(Exception e){failure("Fotografia",e);}
+        pendingPhotoFileName=fileName("jpg");
+        photoButton.setEnabled(false);
+        try{session.capture(request(false,true),callback,background);log("photo_request",pendingPhotoFileName+" "+MODES[mode]);}
+        catch(Exception e){photoButton.setEnabled(true);failure("Fotografia",e);}
     }
     private void savePhoto(ImageReader r){
         Image image=null;
@@ -445,7 +459,7 @@ public final class MainActivity extends Activity {
             byte[] bytes=new byte[data.remaining()];
             data.get(bytes);
             ContentValues cv=new ContentValues();
-            cv.put(MediaStore.Images.Media.DISPLAY_NAME,fileName("jpg"));
+            cv.put(MediaStore.Images.Media.DISPLAY_NAME,pendingPhotoFileName==null?fileName("jpg"):pendingPhotoFileName);
             cv.put(MediaStore.Images.Media.MIME_TYPE,"image/jpeg");
             cv.put(MediaStore.Images.Media.RELATIVE_PATH,Environment.DIRECTORY_PICTURES+"/VisionLab");
             cv.put(MediaStore.Images.Media.IS_PENDING,1);
@@ -458,10 +472,11 @@ public final class MainActivity extends Activity {
             ContentValues ready=new ContentValues();
             ready.put(MediaStore.Images.Media.IS_PENDING,0);
             getContentResolver().update(uri,ready,null,null);
-            log("photo_saved",bytes.length+" bytes");
+            log("photo_saved",String.valueOf(pendingPhotoFileName)+" "+bytes.length+" bytes");
             toast("Foto salva na Galeria.");
         }catch(Exception e){if(uri!=null)getContentResolver().delete(uri,null,null);failure("Salvar foto",e);}
-        finally{if(image!=null)image.close();}
+        finally{if(image!=null)image.close();pendingPhotoFileName=null;
+            runOnUiThread(()->photoButton.setEnabled(!recording&&!starting));}
     }
     private void startVideo(){
         if(camera==null||recording||starting){toast("Câmera não está pronta.");return;}
@@ -469,7 +484,8 @@ public final class MainActivity extends Activity {
         try{
             recordingSize=chooseVideoSize();
             ContentValues cv=new ContentValues();
-            cv.put(MediaStore.Video.Media.DISPLAY_NAME,fileName("mp4"));
+            currentRecordingName=fileName("mp4");
+            cv.put(MediaStore.Video.Media.DISPLAY_NAME,currentRecordingName);
             cv.put(MediaStore.Video.Media.MIME_TYPE,"video/mp4");
             cv.put(MediaStore.Video.Media.RELATIVE_PATH,Environment.DIRECTORY_MOVIES+"/VisionLab");
             cv.put(MediaStore.Video.Media.IS_PENDING,1);
@@ -482,10 +498,7 @@ public final class MainActivity extends Activity {
             recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
             recorder.setVideoEncoder(selectedCodec==1?MediaRecorder.VideoEncoder.HEVC:MediaRecorder.VideoEncoder.H264);
             recorder.setVideoSize(recordingSize.getWidth(),recordingSize.getHeight());
-            int requestedFps=30;
-            Range<Integer> chosenFps=preferredFps();
-            if(mode==1&&chosenFps!=null&&chosenFps.getUpper()>=15&&chosenFps.getUpper()<=30)
-                requestedFps=chosenFps.getUpper();
+            int requestedFps=selectedVideoFps;
             recorder.setVideoFrameRate(requestedFps);
             log("recorder_fps_requested",String.valueOf(requestedFps));
             recorder.setVideoEncodingBitRate(selectedResolution==1?12_000_000:6_000_000);
@@ -512,7 +525,7 @@ public final class MainActivity extends Activity {
                 ContentValues cv=new ContentValues();
                 cv.put(MediaStore.Video.Media.IS_PENDING,0);
                 getContentResolver().update(recordingUri,cv,null,null);
-                log("video_saved",String.valueOf(recordingUri));
+                log("video_saved",currentRecordingName+" "+String.valueOf(recordingUri));
                 toast("Vídeo salvo na Galeria.");
             }else{
                 getContentResolver().delete(recordingUri,null,null);
@@ -520,21 +533,23 @@ public final class MainActivity extends Activity {
             }
             recordingUri=null;
         }
-        recording=false;starting=false;
+        recording=false;starting=false;currentRecordingName=null;
         startButton.setEnabled(true);stopButton.setEnabled(false);photoButton.setEnabled(true);
         preview.setKeepScreenOn(false);
         if(!destroyed&&camera!=null&&preview.isAvailable())configure(false);
     }
     private String fileName(String ext){
-        return "Vision_"+sceneTag+"_M"+mode+"_"+new SimpleDateFormat("yyyyMMdd_HHmmss_SSS",Locale.US).format(new Date())+"."+ext;
+        return "Vision_"+sceneTag+"_M"+mode+"_F"+selectedVideoFps+"_"+new SimpleDateFormat("yyyyMMdd_HHmmss_SSS",Locale.US).format(new Date())+"."+ext;
     }
     private void export(boolean csv){
         if(recording||starting){toast("Pare a gravação antes de exportar relatórios.");return;}
         try{
+            JSONArray snapshot;
+            synchronized(sampleLock){snapshot=new JSONArray(samples.toString());}
             if(csv){
                 StringBuilder sb=new StringBuilder("time,sensorTimestampNs,iso,exposureNs,frameDurationNs,measuredInstantFps,llbState,recording,mode\n");
-                for(int i=0;i<samples.length();i++){
-                    JSONObject row=samples.getJSONObject(i);
+                for(int i=0;i<snapshot.length();i++){
+                    JSONObject row=snapshot.getJSONObject(i);
                     String[] keys={"time","sensorTimestampNs","iso","exposureNs","frameDurationNs",
                             "measuredInstantFps","llbState","recording","mode"};
                     for(int k=0;k<keys.length;k++){
@@ -547,8 +562,8 @@ public final class MainActivity extends Activity {
             }else{
                 JSONObject data=Diagnostic.inventory(this);
                 data.put("selectedCameraId",cameraId);
-                data.put("events",events);
-                data.put("captureSamples",samples);
+                synchronized(sampleLock){data.put("events",new JSONArray(events.toString()));}
+                data.put("captureSamples",snapshot);
                 data.put("framesObserved",frames);
                 data.put("sampleNote","Sensor frame timestamps are not proof of encoded MP4 framerate.");
                 PowerManager p=(PowerManager)getSystemService(Context.POWER_SERVICE);
@@ -576,7 +591,7 @@ public final class MainActivity extends Activity {
         try{
             JSONObject e=new JSONObject();
             e.put("ms",System.currentTimeMillis());e.put("type",type);e.put("detail",detail);
-            events.put(e);
+            synchronized(sampleLock){events.put(e);}
         }catch(Exception ignored){}
     }
     private void say(String msg){runOnUiThread(()->{if(!destroyed)status.setText(msg);});}
