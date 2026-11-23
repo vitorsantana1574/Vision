@@ -314,7 +314,9 @@ public final class MainActivity extends Activity {
                             log("video_started",recordingSize+" profile="+MODES[mode]+" codec="+selectedCodec);
                             runOnUiThread(()->{
                                 startButton.setEnabled(false);stopButton.setEnabled(true);
-                                photoButton.setEnabled(false);status.setText("GRAVANDO MP4");
+                                photoButton.setEnabled(false);
+                                preview.setKeepScreenOn(true);
+                                status.setText("GRAVANDO MP4");
                             });
                         } else if(!forVideo) say("Prévia pronta: "+MODES[mode]);
                     }catch(Exception e) {
@@ -480,7 +482,12 @@ public final class MainActivity extends Activity {
             recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
             recorder.setVideoEncoder(selectedCodec==1?MediaRecorder.VideoEncoder.HEVC:MediaRecorder.VideoEncoder.H264);
             recorder.setVideoSize(recordingSize.getWidth(),recordingSize.getHeight());
-            recorder.setVideoFrameRate(30);
+            int requestedFps=30;
+            Range<Integer> chosenFps=preferredFps();
+            if(mode==1&&chosenFps!=null&&chosenFps.getUpper()>=15&&chosenFps.getUpper()<=30)
+                requestedFps=chosenFps.getUpper();
+            recorder.setVideoFrameRate(requestedFps);
+            log("recorder_fps_requested",String.valueOf(requestedFps));
             recorder.setVideoEncodingBitRate(selectedResolution==1?12_000_000:6_000_000);
             recorder.setOrientationHint(90);
             recorder.setOutputFile(recordingFile.getFileDescriptor());
@@ -515,12 +522,14 @@ public final class MainActivity extends Activity {
         }
         recording=false;starting=false;
         startButton.setEnabled(true);stopButton.setEnabled(false);photoButton.setEnabled(true);
-        if(camera!=null&&preview.isAvailable())configure(false);
+        preview.setKeepScreenOn(false);
+        if(!destroyed&&camera!=null&&preview.isAvailable())configure(false);
     }
     private String fileName(String ext){
-        return "Vision_"+sceneTag+"_"+new SimpleDateFormat("yyyyMMdd_HHmmss",Locale.US).format(new Date())+"."+ext;
+        return "Vision_"+sceneTag+"_M"+mode+"_"+new SimpleDateFormat("yyyyMMdd_HHmmss_SSS",Locale.US).format(new Date())+"."+ext;
     }
     private void export(boolean csv){
+        if(recording||starting){toast("Pare a gravação antes de exportar relatórios.");return;}
         try{
             if(csv){
                 StringBuilder sb=new StringBuilder("time,sensorTimestampNs,iso,exposureNs,frameDurationNs,measuredInstantFps,llbState,recording,mode\n");
