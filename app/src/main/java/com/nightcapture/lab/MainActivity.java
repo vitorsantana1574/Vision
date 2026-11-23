@@ -81,6 +81,7 @@ public final class MainActivity extends Activity {
     private Uri recordingUri;
     private Size recordingSize;
     private volatile boolean recording=false, starting=false;
+    private long recordingStartedMs=0;
     private boolean destroyed=false;
     private int mode=0, selectedResolution=0, selectedCodec=0, selectedIso=1600, selectedVideoFps=30;
     private double selectedExposureMs=50;
@@ -129,7 +130,7 @@ public final class MainActivity extends Activity {
         root.setOrientation(LinearLayout.VERTICAL);
         root.setPadding(dp(10),dp(6),dp(10),dp(5));
         root.setBackgroundColor(0xff111821);
-        TextView title=text("VISION / NightCapture Lab 0.1");
+        TextView title=text("VISION / Lab 0.3");
         title.setTextSize(21);
         root.addView(title);
         status=text("Permissão da câmera necessária.");
@@ -166,9 +167,9 @@ public final class MainActivity extends Activity {
         panel.addView(text("Codec do vídeo"));
         codecBox=spinner("H.264 / AVC","H.265 / HEVC");
         panel.addView(codecBox);
-        panel.addView(text("FPS real solicitado ao sensor e ao gravador"));
-        fpsBox=spinner("10 FPS (mais luz)","15 FPS (equilíbrio)","30 FPS (movimento)");
-        fpsBox.setSelection(2);
+        panel.addView(text("FPS solicitado ao sensor/gravador (confirmar no MP4)"));
+        fpsBox=spinner("10 FPS","15 FPS","20 FPS","24 FPS","30 FPS");
+        fpsBox.setSelection(4);
         panel.addView(fpsBox);
         panel.addView(text("ISO manual (se Camera2 permitir)"));
         isoBox=new EditText(this);
@@ -212,7 +213,7 @@ public final class MainActivity extends Activity {
         mode=modeBox.getSelectedItemPosition();
         selectedResolution=resolutionBox.getSelectedItemPosition();
         selectedCodec=codecBox.getSelectedItemPosition();
-        selectedVideoFps=fpsBox.getSelectedItemPosition()==0?10:fpsBox.getSelectedItemPosition()==1?15:30;
+        selectedVideoFps=new int[]{10,15,20,24,30}[fpsBox.getSelectedItemPosition()];
         if(mode==3&&!hasLowLightBoost()&&characteristics!=null){
             mode=0;modeBox.setSelection(0);
             toast("Low Light Boost não anunciado nesta câmera; modo Automático aplicado.");
@@ -321,8 +322,8 @@ public final class MainActivity extends Activity {
                         s.setRepeatingRequest(request(forVideo,false),callback,background);
                         if(forVideo&&starting) {
                             recorder.start();
-                            starting=false;recording=true;
-                            log("video_started",recordingSize+" profile="+MODES[mode]+" codec="+selectedCodec);
+                            starting=false;recording=true;recordingStartedMs=System.currentTimeMillis();
+                            log("video_started",currentRecordingName+" size="+recordingSize+" mode="+MODES[mode]+" requestedFps="+selectedVideoFps+" codec="+(selectedCodec==1?"HEVC":"H264")+" isoRequested="+selectedIso+" exposureMsRequested="+selectedExposureMs+" thermal="+thermalStatus());
                             runOnUiThread(()->{
                                 startButton.setEnabled(false);stopButton.setEnabled(true);
                                 photoButton.setEnabled(false);
@@ -525,7 +526,7 @@ public final class MainActivity extends Activity {
                 ContentValues cv=new ContentValues();
                 cv.put(MediaStore.Video.Media.IS_PENDING,0);
                 getContentResolver().update(recordingUri,cv,null,null);
-                log("video_saved",currentRecordingName+" "+String.valueOf(recordingUri));
+                log("video_saved",currentRecordingName+" "+String.valueOf(recordingUri)+" durationMs="+(System.currentTimeMillis()-recordingStartedMs)+" thermal="+thermalStatus());
                 toast("Vídeo salvo na Galeria.");
             }else{
                 getContentResolver().delete(recordingUri,null,null);
@@ -533,13 +534,17 @@ public final class MainActivity extends Activity {
             }
             recordingUri=null;
         }
-        recording=false;starting=false;currentRecordingName=null;
+        recording=false;starting=false;currentRecordingName=null;recordingStartedMs=0;
         startButton.setEnabled(true);stopButton.setEnabled(false);photoButton.setEnabled(true);
         preview.setKeepScreenOn(false);
         if(!destroyed&&camera!=null&&preview.isAvailable())configure(false);
     }
     private String fileName(String ext){
         return "Vision_"+sceneTag+"_M"+mode+"_F"+selectedVideoFps+"_"+new SimpleDateFormat("yyyyMMdd_HHmmss_SSS",Locale.US).format(new Date())+"."+ext;
+    }
+    private String thermalStatus(){
+        try{PowerManager pm=(PowerManager)getSystemService(Context.POWER_SERVICE);return pm==null?"unknown":String.valueOf(pm.getCurrentThermalStatus());}
+        catch(Exception e){return "unknown";}
     }
     private void export(boolean csv){
         if(recording||starting){toast("Pare a gravação antes de exportar relatórios.");return;}
