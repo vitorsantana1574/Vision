@@ -1,4 +1,3 @@
-# sample data
 session,clip,recording,sample_rel_session_ms,sample_rel_recording_ms,sensor_rel_session_ms,iso,exposure_ms,frame_duration_ms,sensor_est_fps,low_light_boost,mode
 1,PREVIEW,false,0,,0.000,6450,66.6590,66.7000,14.9754,,Automático (referência)
 1,PREVIEW,false,340,,333.881,6450,66.6590,66.7000,14.9754,,Automático (referência)
