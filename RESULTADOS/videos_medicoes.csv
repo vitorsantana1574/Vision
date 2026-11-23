@@ -1,0 +1,8 @@
+test_id,clip_id,profile,requested_fps,mp4_fps,duration_s,frames,dimensions,codec,bitrate_mbps,rec_sensor_samples,iso_median,iso_min,iso_max,exposure_ms_median,exposure_ms_min,exposure_ms_max,sensor_fps_median,sampled_gray_mean_0_255,sampled_laplacian_variance,interpretation
+P00,165894,auto,30,29.95,10.184,305,1280x720,H264,6.034,62,8200,678,8600,33.299,33.299,49.995,29.95,17.346,33.75,pilot_nocturnal_first_export_had_concurrent_modification_error
+P01,165899,auto,30,29.95,10.851,325,1280x720,H264,5.995,66,8200,675,8200,33.299,33.299,33.33,29.95,39.981,168.259,auto_30_reference
+P02,165900,auto,15,15.018,12.652,190,1280x720,H264,6.026,39,7025,675,7025,41.668,33.33,41.668,15.017,50.123,241.088,auto_15_exposure_median_41_67ms
+P03,165901,auto,10,10.011,11.887,119,1280x720,H264,6.04,25,7025,6450,7025,41.668,41.668,66.659,10.011,26.656,69.794,auto_10_did_not_raise_median_exposure_over_auto_15
+P04,165902,manual,15,15.018,11.986,180,1280x720,H264,5.993,38,3200,3200,6450,66,66,66.659,15.017,47.655,136.236,manual_3200_median_actual
+P05,165903,manual,15,15.018,10.588,159,1280x720,H264,6.041,33,6400,3200,6400,66,66,66,15.017,37.609,113.741,manual_6400_median_actual
+P06,165904,manual_moving_phone,15,15.018,11.653,175,1280x720,H264,6.044,36,6400,6400,6400,66,66,66,15.017,52.85,147.337,blur_observed_while_turning_phone_low_light
