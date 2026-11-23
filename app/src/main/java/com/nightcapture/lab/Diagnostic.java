@@ -30,7 +30,7 @@ final class Diagnostic {
         if (o == null) return JSONObject.NULL;
         if (o instanceof int[]) return ints((int[])o);
         if (o instanceof long[]) { JSONArray a=new JSONArray(); for (long x:(long[])o) a.put(x); return a; }
-        if (o instanceof float[]) { JSONArray a=new JSONArray(); for (float x:(float[])o) a.put(x); return a; }
+        if (o instanceof float[]) { JSONArray a=new JSONArray(); for (float x:(float[])o) a.put(Float.valueOf(x)); return a; }
         return o.toString();
     }
     static JSONArray ints(int[] data) {
