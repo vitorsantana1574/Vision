@@ -13,6 +13,17 @@ Aplicativo pessoal, **offline**, para avaliar **vídeos noturnos com o Redmi 15C
 
 **Não implementado:** processamento noturno/IA, redução temporal própria, estabilização, gravação em background, áudio, controle manual de foco, captura infravermelha. Os perfis chamados **Detalhes** e **Movimento** ainda não possuem tratamento de imagem diferente; para o diagnóstico use **Automático** ou **Manual**.
 
+## Registros permanentes de testes
+
+- [**RELATÓRIO CONSOLIDADO: vídeo, fotos, conclusões e limitações**](RESULTADOS/RELATORIO_CONSOLIDADO.md)
+- [**Status dos testes: concluídos e pendentes**](RESULTADOS/STATUS_TESTES.md)
+- [Medições por vídeo, CSV](RESULTADOS/videos_medicoes.csv)
+- [Medições por fotografia, CSV](RESULTADOS/fotos_medicoes.csv)
+- [Amostras da câmera Camera2 com tempo relativo, CSV](RESULTADOS/amostras_camera_sanitizadas.csv)
+- [Inventário técnico Camera2/codec sanitizado, JSON](RESULTADOS/inventario_camera_sanitizado.json)
+
+O GitHub é **público**: os MP4/JPEG originais não são enviados e não devem ser publicados aqui. Os registros preservam medições e observações técnicas, mas não substituem o material original para reprocessamento futuro.
+
 ## Protocolo de testes
 O documento **[PROTOCOLO_DE_TESTES.md](PROTOCOLO_DE_TESTES.md)** lista **todos os ensaios, configurações e critérios**: variação de FPS, ISO, exposição, resolução, codec, mudanças bruscas de luminosidade, foco, movimento, durabilidade e comparação com câmera Xiaomi.
 
