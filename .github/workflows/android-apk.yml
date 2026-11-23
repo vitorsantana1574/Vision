@@ -18,11 +18,18 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Preparar Android SDK sem setup-android
+      - name: Preparar SDK Android 35
+        shell: bash
         run: |
           echo "ANDROID_HOME=$ANDROID_HOME"
-          yes | sdkmanager --licenses > /dev/null || true
-          sdkmanager --install "platforms;android-35" "build-tools;35.0.0"
+          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -1)
+          if [ -z "$SDKMANAGER" ]; then
+            echo "::error::Android cmdline-tools não encontrados"
+            exit 1
+          fi
+          echo "sdkmanager=$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses > /dev/null || true
+          "$SDKMANAGER" --install "platforms;android-35" "build-tools;35.0.0"
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
