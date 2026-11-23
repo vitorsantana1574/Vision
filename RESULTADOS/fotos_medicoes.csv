@@ -1,0 +1,5 @@
+photo_id,dimensions,approx_grayscale_mean_0_255,approx_grayscale_std,notes
+165889,1152x1536,29.41,15.43,"low light; scene structures visible with noise; image copy not original sensor RAW"
+165890,1152x1536,32.72,16.76,"low light; weak contrast and chromatic noise"
+165891,1152x1536,6.39,2.25,"near black; little usable signal"
+165892,1152x1536,70.31,31.73,"brighter scene; visible objects; strong noise"
