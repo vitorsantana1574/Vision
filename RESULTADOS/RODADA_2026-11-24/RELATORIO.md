@@ -19,6 +19,8 @@
 
 O MP4 codificado tem espaçamento PTS praticamente constante de **33,389 ms** e não mostra intervalos ausentes de tempo. Esta análise **não prova** que não existam quadros quase duplicados. Os vídeos não contêm trilha de áudio.
 
+**Verificação adicional de quadros repetidos:** foram decodificados os **526 + 584 + 227 = 1337 quadros**; após redimensionar cada quadro a 160×90 em escala de cinza, **não foi encontrado nenhum par consecutivo exatamente idêntico**. Alguns quadros apresentam diferenças mínimas devido a regiões quase pretas, e isso não comprova movimento independente nem a ausência de frames repetidos no sensor.
+
 As amostras de captura indicam quase sempre ISO 8200 e exposição ~33,299 ms **nas três gravações**. O ISO 675 aparece na amostra inicial de transição de cada vídeo, antes de estabilizar a exposição. A faixa técnica do sensor anuncia ISO até 16000, mas a captura automática analisada operou em ~8200. Não inferir que o sistema poderia atingir ISO16000 com qualidade aceitável.
 
 ## Inspeção visual minuciosa (amostra periódica, não reconstrução da mídia)
