@@ -1,22 +1,32 @@
-# Vision Lab 0.4 | Protocolo completo de diagnóstico dinâmico do Redmi 15C
+# Vision Lab 0.5 | Protocolo completo de diagnóstico dinâmico do Redmi 15C
 
 **Objetivo exclusivo:** encontrar o perfil de **GRAVAÇÃO NOTURNA COM O CELULAR NA MÃO E EM MOVIMENTO** que mantém melhor legibilidade real, com ruído, borrão e travamentos aceitáveis. Fotos são secundárias. Este roteiro é específico do Redmi 15C 25078RA3EL, Android 16, HyperOS 3, conforme os relatórios obtidos no próprio aparelho.
 
-**Status:** protocolo de ensaio. O Vision Lab 0.4 apenas captura e registra dados; **não contém IA, realce de sombra, estabilização digital nem redução temporal própria**. O aparelho não anuncia Low Light Boost nem extensões Night na Camera2. Não usar esses recursos como se estivessem implementados.
+**Status:** protocolo de ensaio. O Vision Lab 0.5 apenas captura e registra dados; **não contém IA, realce de sombra, estabilização digital nem redução temporal própria**. O aparelho não anuncia Low Light Boost nem extensões Night na Camera2. Não usar esses recursos como se estivessem implementados.
 
-## Prioridade imediata após a rodada P07–P09
+## Prioridade após a primeira comparação A01 / A02 / A04
 
-Antes de iniciar os 29 testes completos, **instale e verifique a versão 0.4.0**: a tela deve exibir `VISION / Lab 0.4`, o seletor deve incluir **10/15/20/24/30 FPS**, e o novo JSON deve conter `appVersion: 0.4.0` e `motionSensors`. Se o APK foi assinado por outro runner de GitHub, poderá ser necessário desinstalar a versão de debug anterior, **após exportar relatórios**; mantenha os vídeos e fotos da Galeria intactos.
+**Concluídos na versão Lab 0.4:** A01 (30 FPS), A02 (24 FPS), A04 (15 FPS), vídeo extra a 30 FPS e fotografia em cópia reduzida. [Relatório comparativo](RESULTADOS/RODADA_2026-11-24/RELATORIO_COMPARACAO_FPS_LAB04.md). Não repetir esses ensaios sem um motivo específico; o objetivo agora é completar lacunas.
 
-O primeiro lote de comparação controlada será só **A01 (30 FPS), A02 (24 FPS) e A04 (15 FPS)**, todos em 720p/H.264, 20 segundos, mesmo cenário, percurso e luminosidade, **com o celular na mão em movimento**. Envie os três MP4 originais, JSON e CSV. Só após a análise objetiva desse lote avançaremos para os demais ensaios, evitando repetir gravações desnecessárias.
+**Antes de novos testes**, instale o **Lab 0.5** e confira a tela `VISION / Lab 0.5` e `appVersion: 0.5.0` no JSON. Esperamos sensor `rotation_step_deg` no `motionSamples` durante o movimento, pois o aparelho anunciou **TYPE_ROTATION_VECTOR** mas não giroscópio. Se não aparecer, registrar como limitação real do aparelho/APK sem atribuir uma falsa medição de velocidade angular.
 
-**Novo diagnóstico:** 0.4 captura, se os sensores existirem, giroscópio/acelerômetro no campo `motionSamples` do JSON; também registra estados AE/AF/AWB e distância de foco em `captureSamples`, com vínculo `clip`. Não transfere fotos ou vídeos para a internet. A presença e a qualidade destes dados só serão confirmadas após teste real.
+### Próximos testes mínimos, todos com o celular na mão
 
-Os vídeos P07–P09 antigos foram analisados e preservados em [RESULTADOS/RODADA_2026-11-24/RELATORIO.md](RESULTADOS/RODADA_2026-11-24/RELATORIO.md), sem arquivos de mídia publicados.
+| ID | Perfil | Resolução / codec | FPS | Percurso |
+|---|---|---|---:|---|
+| A03 | Automático | 720p / H.264 | **20** | 20–25 s caminhando e fazendo panorâmicas seguras, mesma iluminação da rodada anterior se possível |
+| D03 | Automático | 720p / H.264 | **24** | 20–25 s com movimento, aproximando-se e afastando-se de superfícies com textura |
+| D04 | Automático | 720p / H.264 | **30** | Repetir a aproximação e a panorâmica de D03 na mesma velocidade aproximada |
+
+**Finalidade:** obter 20 FPS real, comparar foco em 24/30 com movimento e verificar telemetria de orientação relativa. Depois, se a gravação e telemetria estiverem corretas, prosseguir para os blocos de exposição manual e 1080p/HEVC já previstos.
+
+**Foto opcional de validação:** tirar 1 JPEG no Lab 0.5 e enviar como **arquivo original**, não apenas imagem compactada no chat, caso queira validar a correção do nome do JPEG nos metadados (`still_metadata file=...` em vez de `null`). Não é necessário repetir fotos para decidir o melhor vídeo noturno.
+
+Não apagar as gravações originais antes de confirmar que o GitHub recebeu **as análises**, não os vídeos. A coleta de sensores não equivale a algoritmo de estabilização implementado.
 
 ## 0. Verifique a versão e prepare o telefone
 
-- Instale o **Lab 0.4.0**, que mostra `VISION / Lab 0.4` no topo, e confirme os FPS **10 / 15 / 20 / 24 / 30**. Se não aparecem 20 e 24 FPS, você está usando um APK antigo.
+- Instale o **Lab 0.5.0**, que mostra `VISION / Lab 0.5` no topo, e confirme os FPS **10 / 15 / 20 / 24 / 30**. Se não aparecem 20 e 24 FPS, você está usando um APK antigo.
 - Se o Android mostrar *Aplicativo não instalado* ao atualizar, as chaves de depuração entre compilações do GitHub podem ter mudado. Desinstale o Lab antigo e instale o novo. **Preserve os MP4/JPEG e exporte JSON/CSV antes de desinstalar.** Não remova a pasta da Galeria.
 - A câmera deve estar **traseira**, com zoom físico **1x**, sem flash. Segure o Redmi em **orientação vertical**: o aplicativo está programado para retrato.
 - Bateria inicial preferencialmente **>= 70%**, sem carregador durante a avaliação térmica, e anote porcentagem inicial/final. Pare se houver aviso de aquecimento, desconforto térmico, perda de bateria excessiva ou risco de queda.
