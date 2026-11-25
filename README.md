@@ -1,11 +1,11 @@
-# Vision Lab 0.4 | Diagnóstico dinâmico para Redmi 15C
+# Vision Lab 0.5 | Diagnóstico dinâmico para Redmi 15C
 
 Aplicativo pessoal, **offline**, para avaliar **vídeos noturnos com o Redmi 15C em movimento**. O objetivo é decidir o melhor sensor FPS/ISO/exposição/resolução/codec antes de desenvolver o processamento de vídeo do Vision.
 
 ## O que está implementado
 - Câmera **traseira** via Camera2, prévia e captura JPEG.
 - MP4 **sem áudio** com seletor **720p / 1080p**, **H.264 / HEVC**, **10 / 15 / 20 / 24 / 30 FPS**.
-- Telemetria por vídeo: nome, versão do aplicativo, configuração solicitada, ISO, exposição, FPS do sensor, estados de AE/AF/AWB, distância de foco se reportada, contagem observada de quadros e sensor de movimento (giroscópio/acelerômetro quando disponíveis).
+- Telemetria por vídeo: nome, versão do aplicativo, configuração solicitada, ISO, exposição, FPS do sensor, estados de AE/AF/AWB, distância de foco (se reportada), contagem de quadros e movimento (giroscópio/acelerômetro ou **mudança relativa de orientação por sensor de rotação**, quando disponíveis).
 - Perfis **Automático** e **Manual** (ISO/exposição; limita exposição ao tempo por quadro em vídeo).
 - Indicador de ISO, exposição e FPS estimado durante captura.
 - Registro da configuração solicitada ao iniciar cada vídeo, duração, estado térmico inicial/final, amostras de foco/AE/AF e movimento em JSON; CSV inclui campos de foco e identificação de gravação.
@@ -34,6 +34,14 @@ O GitHub é **público**: os MP4/JPEG originais não são enviados e não devem 
 
 O GitHub é **público**. Somente medições e análise são registradas aqui. Não enviar vídeos, fotos, frames extraídos ou timestamps absolutos.
 
+## Resultados da comparação FPS (Lab 0.4)
+
+- [**RELATÓRIO: A01/A02/A04 + vídeo extra + fotografia**](RESULTADOS/RODADA_2026-11-24/RELATORIO_COMPARACAO_FPS_LAB04.md)
+- [**Dados Camera2 sanitizados (488 amostras)**](RESULTADOS/RODADA_2026-11-24/amostras_fps_0_4_sanitizadas.csv)
+- [**Status da matriz de testes**](RESULTADOS/STATUS_TESTES.md)
+
+**Resultado provisório:** 24 e 15 FPS automáticos entregaram a mesma exposição de ~41,7 ms e ISO 7025, enquanto 30 FPS entregou 33,3 ms/ISO 8200. 24 FPS será investigado como bom equilíbrio para movimento. A telemetria de foco exige cautela em cenas extremamente escuras. A versão 0.5 ainda não foi validada fisicamente.
+
 ## Protocolo de testes
 O documento **[PROTOCOLO_DE_TESTES.md](PROTOCOLO_DE_TESTES.md)** lista **todos os ensaios, configurações e critérios**: variação de FPS, ISO, exposição, resolução, codec, mudanças bruscas de luminosidade, foco, movimento, durabilidade e comparação com câmera Xiaomi.
 
@@ -44,7 +52,7 @@ Os testes anteriores do próprio usuário mostraram **ISO 6400/exposição 66 ms
 1. Abra [Actions do Vision](https://github.com/vitorsantana1574/Vision/actions).
 2. Selecione **Vision Lab - build APK**, confira que a última execução esteja verde.
 3. Abra **Artifacts > VisionLab-debug-APK**, baixe o ZIP e extraia `app-debug.apk`.
-4. Instale no Redmi 15C. A tela inicial deve mostrar **VISION / Lab 0.4** e o seletor FPS deve conter **10, 15, 20, 24, 30**. No diagnóstico JSON, confira `appVersion: 0.4.0`.
+4. Instale no Redmi 15C. A tela inicial deve mostrar **VISION / Lab 0.5** e o seletor FPS deve conter **10, 15, 20, 24, 30**. No diagnóstico JSON, confira `appVersion: 0.5.0`. Em `motionSamples`, procure `rotation_step_deg`; ele depende dos sensores disponíveis e ainda precisa de teste físico.
 5. **Caso a instalação como atualização falhe:** o GitHub pode assinar cada build debug com uma chave distinta. Exporte os relatórios antigos, desinstale somente o Lab anterior e instale o novo. Os vídeos e fotos na Galeria devem continuar armazenados.
 
 **Android:** mínimo API 35, compilado com Android SDK 35, Java 17, Gradle 8.9; testado em CI com compilação e Android Lint, **sem teste instrumentado no Redmi 15C**.
