@@ -9,3 +9,7 @@ P06,165904,manual_moving_phone,15,15.018,11.653,175,1280x720,H264,6.044,36,6400,
 P07,167251,auto_moving_phone,30,29.9501,17.5626,526,1280x720,H264,6.0044,106,8200,675,8200,33.299,33.299,33.330,29.950,12.760,4.060,rapid_transitions_darkness_and_motion_about_75pct_pixels_below_luma10_sampled
 P08,167252,auto_moving_phone,30,29.9501,19.4991,584,1280x720,H264,5.9957,118,8200,675,8200,33.299,33.299,33.330,29.950,16.300,2.730,rapid_pan_and_large_nearblack_regions_about_68pct_pixels_below_luma10_sampled
 P09,167254,auto_nearsteady,30,29.9501,7.5793,227,1280x720,H264,5.9892,47,8200,675,8200,33.299,33.299,33.330,29.950,34.270,40.530,framing_nearly_constant_so_not_comparable_to_p07_p08_for_motion
+A01,167264,auto_moving_phone,30,29.9501,26.2103,785,1280x720,H264,5.9957,159,8200,675,8200,33.299,33.299,33.330,29.950,55.29,134.43,lab04_30fps_af_unfocused_2of159_luma_not_comparable_across_scenes
+A02,167265,auto_moving_phone,24,23.9526,24.7155,592,1280x720,H264,5.9982,120,7025,675,7025,41.668,33.330,41.668,23.952,48.91,63.00,lab04_24fps_iso7025_same_exposure_as_15fps_candidate
+A04,167266,auto_moving_phone,15,15.0175,26.5023,398,1280x720,H264,6.0133,81,7025,618,7484,41.668,41.667,41.668,15.017,35.53,22.15,lab04_15fps_no_longer_exposure_af_unfocused_20of81_may_be_scene
+EXTRA30,167268,auto_dark_reference,30,29.9501,20.9682,628,1280x720,H264,5.9927,128,8200,6450,8200,33.299,33.299,66.659,29.950,17.41,251.8,extra30_very_dark_64pct_below_luma10_not_controlled_comparison
