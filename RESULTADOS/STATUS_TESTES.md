@@ -15,11 +15,22 @@
 | P06 | 165904.mp4 | Manual 15 FPS, ISO 6400, movimentação, analisado |
 | FOTO-P00–P03 | 165889.jpg–165892.jpg | Cópias analisadas, EXIF indisponível |
 
+## Rodada examinada em 24/11/2026
+
+Resultados completos: [Relatório da rodada](RODADA_2026-11-24/RELATORIO.md) e [amostras relativas](RODADA_2026-11-24/amostras_sensor_relativas.csv). **Sem MP4/JPEG armazenados neste repositório.**
+
+| ID | Material | Diagnóstico |
+|---|---|---|
+| P07 | 167251.mp4 | Auto 30 FPS, 17,56 s; giros e trechos quase pretos, analisado |
+| P08 | 167252.mp4 | Auto 30 FPS, 19,50 s; movimentação e escurecimento intenso, analisado |
+| P09 | 167254.mp4 | Auto 30 FPS, 7,58 s; enquadramento mais constante, analisado |
+| FOTO-P04 | 167253.jpg | Cópia comprimida; original 207588 bytes segundo app; quase preta, analisada com ressalva |
+
 ## Testes da próxima fase
 
 | ID | Objetivo | FPS pedido | Perfil | Resolução | Codec | Status |
 |---|---|---:|---|---|---|---|
-| A01 | FPS automatico | 30 | automatico | 720p | H264 | pendente |
+| A01 | FPS automatico | 30 | automatico | 720p | H264 | parcial (3 testes similares, sem ID/percurso igual) |
 | A02 | FPS automatico | 24 | automatico | 720p | H264 | pendente |
 | A03 | FPS automatico | 20 | automatico | 720p | H264 | pendente |
 | A04 | FPS automatico | 15 | automatico | 720p | H264 | pendente |
@@ -49,7 +60,7 @@
 | F01 | Foto referencia | na | automatico | JPEG | na | pendente |
 | F02 | Camera nativa | 30 | camera_Xiaomi | 1080p | nativo | pendente |
 
-**Totais:** 29 ensaios planejados para a fase Lab 0.3; 0 ensaios desta fase entregues até a atualização de 23/11/2026. Não misturar os P00–P06 antigos com novos IDs A–F.
+**Totais:** 29 ensaios planejados para a fase Lab 0.3; 0 ensaios desta fase integralmente concluídos; A01 parcialmente coberto, mas exige comparação controlada e versão atualizada. Não misturar os P00–P06 antigos com novos IDs A–F.
 
 ## Procedimento para atualizar sem perder dados
 
