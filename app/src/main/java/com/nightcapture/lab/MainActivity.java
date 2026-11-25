@@ -8,6 +8,10 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
@@ -55,7 +59,7 @@ import java.util.List;
 import java.util.Locale;
 
 /** Local-only experimental Camera2 lab for one Redmi 15C. No mic/network. */
-public final class MainActivity extends Activity {
+public final class MainActivity extends Activity implements SensorEventListener {
     private static final int REQ_CAMERA=102, REQ_EXPORT=103;
     private static final String[] MODES={
         "Automático (referência)","Detalhes (menos FPS)","Movimento (mais FPS)",
@@ -81,7 +85,11 @@ public final class MainActivity extends Activity {
     private Uri recordingUri;
     private Size recordingSize;
     private volatile boolean recording=false, starting=false;
-    private long recordingStartedMs=0;
+    private long recordingStartedMs=0, recordingStartedElapsedMs=0;
+    private volatile long videoFrames=0;
+    private SensorManager motionManager;
+    private Sensor gyroSensor,accelSensor;
+    private long lastGyroMs=0,lastAccelMs=0;
     private boolean destroyed=false;
     private int mode=0, selectedResolution=0, selectedCodec=0, selectedIso=1600, selectedVideoFps=30;
     private double selectedExposureMs=50;
@@ -91,6 +99,7 @@ public final class MainActivity extends Activity {
     private double instantFps=0;
     private final JSONArray samples=new JSONArray();
     private final JSONArray events=new JSONArray();
+    private final JSONArray motionSamples=new JSONArray();
 
     @Override public void onCreate(Bundle bundle) {
         super.onCreate(bundle);
@@ -101,6 +110,11 @@ public final class MainActivity extends Activity {
         thread.start();
         background=new Handler(thread.getLooper());
         manager=(CameraManager)getSystemService(Context.CAMERA_SERVICE);
+        motionManager=(SensorManager)getSystemService(Context.SENSOR_SERVICE);
+        if(motionManager!=null){
+            gyroSensor=motionManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
+            accelSensor=motionManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        }
         if(checkSelfPermission(Manifest.permission.CAMERA)!=PackageManager.PERMISSION_GRANTED)
             requestPermissions(new String[]{Manifest.permission.CAMERA},REQ_CAMERA);
         else discoverCamera();
@@ -130,7 +144,7 @@ public final class MainActivity extends Activity {
         root.setOrientation(LinearLayout.VERTICAL);
         root.setPadding(dp(10),dp(6),dp(10),dp(5));
         root.setBackgroundColor(0xff111821);
-        TextView title=text("VISION / Lab 0.3");
+        TextView title=text("VISION / Lab 0.4");
         title.setTextSize(21);
         root.addView(title);
         status=text("Permissão da câmera necessária.");
@@ -206,7 +220,7 @@ public final class MainActivity extends Activity {
         Button csv=button("Exportar amostras CSV");
         csv.setOnClickListener(v->export(true));
         panel.addView(csv);
-        panel.addView(text("Testes locais, sem internet, áudio ou gravação oculta. Fotos e vídeos vão à Galeria. O indicador verde da câmera é normal."));
+        panel.addView(text("Diagnóstico de movimento: giroscópio e acelerômetro, quando disponíveis. Sem GPS, internet, áudio ou gravação oculta."));
         setContentView(root);
     }
     private void readControls() {
@@ -322,6 +336,8 @@ public final class MainActivity extends Activity {
                         s.setRepeatingRequest(request(forVideo,false),callback,background);
                         if(forVideo&&starting) {
                             recorder.start();
+                            videoFrames=0;lastFrameNs=0;
+                            recordingStartedElapsedMs=android.os.SystemClock.elapsedRealtime();
                             starting=false;recording=true;recordingStartedMs=System.currentTimeMillis();
                             log("video_started",currentRecordingName+" size="+recordingSize+" mode="+MODES[mode]+" requestedFps="+selectedVideoFps+" codec="+(selectedCodec==1?"HEVC":"H264")+" isoRequested="+selectedIso+" exposureMsRequested="+selectedExposureMs+" thermal="+thermalStatus());
                             runOnUiThread(()->{
@@ -409,6 +425,7 @@ public final class MainActivity extends Activity {
     private final CameraCaptureSession.CaptureCallback callback=new CameraCaptureSession.CaptureCallback(){
         @Override public void onCaptureCompleted(CameraCaptureSession s,CaptureRequest r,TotalCaptureResult x){
             frames++;
+            if(recording)videoFrames++;
             Long ts=x.get(CaptureResult.SENSOR_TIMESTAMP);
             Integer iso=x.get(CaptureResult.SENSOR_SENSITIVITY);
             Long exp=x.get(CaptureResult.SENSOR_EXPOSURE_TIME);
@@ -427,6 +444,11 @@ public final class MainActivity extends Activity {
                 row.put("llbState",llb);
                 row.put("recording",recording);
                 row.put("mode",MODES[mode]);
+                row.put("clip",recording?currentRecordingName:"PREVIEW");
+                row.put("aeState",x.get(CaptureResult.CONTROL_AE_STATE));
+                row.put("afState",x.get(CaptureResult.CONTROL_AF_STATE));
+                row.put("awbState",x.get(CaptureResult.CONTROL_AWB_STATE));
+                row.put("focusDistanceDiopters",x.get(CaptureResult.LENS_FOCUS_DISTANCE));
                 synchronized(sampleLock){if(samples.length()<10000)samples.put(row);}
             }catch(Exception ignored){ }
             long now=System.currentTimeMillis();
@@ -526,7 +548,7 @@ public final class MainActivity extends Activity {
                 ContentValues cv=new ContentValues();
                 cv.put(MediaStore.Video.Media.IS_PENDING,0);
                 getContentResolver().update(recordingUri,cv,null,null);
-                log("video_saved",currentRecordingName+" "+String.valueOf(recordingUri)+" durationMs="+(System.currentTimeMillis()-recordingStartedMs)+" thermal="+thermalStatus());
+                log("video_saved",currentRecordingName+" "+String.valueOf(recordingUri)+" durationMs="+(System.currentTimeMillis()-recordingStartedMs)+" sensorFrames="+videoFrames+" thermal="+thermalStatus());
                 toast("Vídeo salvo na Galeria.");
             }else{
                 getContentResolver().delete(recordingUri,null,null);
@@ -534,7 +556,7 @@ public final class MainActivity extends Activity {
             }
             recordingUri=null;
         }
-        recording=false;starting=false;currentRecordingName=null;recordingStartedMs=0;
+        recording=false;starting=false;currentRecordingName=null;recordingStartedMs=0;recordingStartedElapsedMs=0;
         startButton.setEnabled(true);stopButton.setEnabled(false);photoButton.setEnabled(true);
         preview.setKeepScreenOn(false);
         if(!destroyed&&camera!=null&&preview.isAvailable())configure(false);
@@ -552,11 +574,11 @@ public final class MainActivity extends Activity {
             JSONArray snapshot;
             synchronized(sampleLock){snapshot=new JSONArray(samples.toString());}
             if(csv){
-                StringBuilder sb=new StringBuilder("time,sensorTimestampNs,iso,exposureNs,frameDurationNs,measuredInstantFps,llbState,recording,mode\n");
+                StringBuilder sb=new StringBuilder("time,sensorTimestampNs,iso,exposureNs,frameDurationNs,measuredInstantFps,llbState,recording,mode,clip,aeState,afState,awbState,focusDistanceDiopters\n");
                 for(int i=0;i<snapshot.length();i++){
                     JSONObject row=snapshot.getJSONObject(i);
                     String[] keys={"time","sensorTimestampNs","iso","exposureNs","frameDurationNs",
-                            "measuredInstantFps","llbState","recording","mode"};
+                            "measuredInstantFps","llbState","recording","mode","clip","aeState","afState","awbState","focusDistanceDiopters"};
                     for(int k=0;k<keys.length;k++){
                         if(k>0)sb.append(',');
                         sb.append('"').append(row.optString(keys[k],"").replace("\"","\"\"")).append('"');
@@ -569,6 +591,8 @@ public final class MainActivity extends Activity {
                 data.put("selectedCameraId",cameraId);
                 synchronized(sampleLock){data.put("events",new JSONArray(events.toString()));}
                 data.put("captureSamples",snapshot);
+                synchronized(sampleLock){data.put("motionSamples",new JSONArray(motionSamples.toString()));}
+                data.put("motionNote","motionSamples are sampled sensor magnitudes, not stabilization or video frames");
                 data.put("framesObserved",frames);
                 data.put("sampleNote","Sensor frame timestamps are not proof of encoded MP4 framerate.");
                 PowerManager p=(PowerManager)getSystemService(Context.POWER_SERVICE);
@@ -620,13 +644,41 @@ public final class MainActivity extends Activity {
         try{if(previewSurface!=null)previewSurface.release();}catch(Exception ignored){}
         previewSurface=null;
     }
+    @Override public void onSensorChanged(SensorEvent event) {
+        if(!recording||event==null||event.values.length<3||recordingStartedElapsedMs<=0)return;
+        int type=event.sensor.getType();
+        if(type!=Sensor.TYPE_GYROSCOPE&&type!=Sensor.TYPE_ACCELEROMETER)return;
+        long now=android.os.SystemClock.elapsedRealtime();
+        if(type==Sensor.TYPE_GYROSCOPE){
+            if(now-lastGyroMs<100)return;
+            lastGyroMs=now;
+        }else{
+            if(now-lastAccelMs<100)return;
+            lastAccelMs=now;
+        }
+        try{
+            double magnitude=Math.sqrt(event.values[0]*event.values[0]+event.values[1]*event.values[1]+event.values[2]*event.values[2]);
+            JSONObject sample=new JSONObject();
+            sample.put("clip",currentRecordingName);
+            sample.put("relativeMs",Math.max(0,now-recordingStartedElapsedMs));
+            sample.put("type",type==Sensor.TYPE_GYROSCOPE?"gyro_rad_s":"accel_m_s2");
+            sample.put("magnitude",magnitude);
+            synchronized(sampleLock){if(motionSamples.length()<12000)motionSamples.put(sample);}
+        }catch(Exception ignored){}
+    }
+    @Override public void onAccuracyChanged(Sensor sensor,int accuracy) {}
     @Override protected void onPause(){
         super.onPause();
+        if(motionManager!=null)motionManager.unregisterListener(this);
         if(recording||starting)stopVideo();
         closeCamera();
     }
     @Override protected void onResume(){
         super.onResume();
+        if(motionManager!=null){
+            if(gyroSensor!=null)motionManager.registerListener(this,gyroSensor,SensorManager.SENSOR_DELAY_GAME,background);
+            if(accelSensor!=null)motionManager.registerListener(this,accelSensor,SensorManager.SENSOR_DELAY_GAME,background);
+        }
         if(manager!=null&&cameraId!=null&&preview!=null&&preview.isAvailable())openCamera();
     }
     @Override protected void onDestroy(){
