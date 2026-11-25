@@ -1,3 +1,13 @@
+## Nova rodada: 24/11/2026
+
+Foram analisados três vídeos adicionais (P07–P09, todos automáticos a ~29,95 FPS, 720p/H.264) e uma cópia JPEG (FOTO-P04). Os três MP4 são íntegros, sem lacunas evidentes de timestamp, mas contêm regiões muito escuras; todas as amostras estáveis de vídeo ficaram próximas de ISO 8200 e exposição de 33,3 ms. O arquivo JPEG recebido é muito comprimido em relação ao original indicado no diagnóstico; suas métricas devem ser interpretadas como **cópia compartilhada**, não como qualidade original do sensor.
+
+Os números foram adicionados em [videos_medicoes.csv](videos_medicoes.csv) e [fotos_medicoes.csv](fotos_medicoes.csv), e as 456 novas amostras foram guardadas somente como **dados de sensor relativos** em [RODADA_2026-11-24/amostras_sensor_relativas.csv](RODADA_2026-11-24/amostras_sensor_relativas.csv).
+
+**[Ler análise detalhada com ressalvas, comparação visual e plano de diagnóstico](RODADA_2026-11-24/RELATORIO.md).**
+
+O APK utilizado nesta rodada não confirma as informações de versão/metadados de sessão esperadas no Lab 0.3. A versão 0.4 do laboratório incluirá versão explícita, estados AE/AF, distância de foco e leitura dos sensores de movimento quando disponíveis; seu funcionamento precisa ser comprovado no telefone.
+
 # Vision: registro permanente de ensaios de câmera (Redmi 15C)
 
 **Atualizado em 23/11/2026.** Projeto pessoal Vision; foco em **vídeo noturno segurando o celular em movimento**. Informações derivadas dos arquivos enviados na conversa e de inspeção instrumental (ffprobe/OpenCV e JSON Camera2).
