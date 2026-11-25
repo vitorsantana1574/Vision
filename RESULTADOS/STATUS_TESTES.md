@@ -26,14 +26,28 @@ Resultados completos: [Relatório da rodada](RODADA_2026-11-24/RELATORIO.md) e [
 | P09 | 167254.mp4 | Auto 30 FPS, 7,58 s; enquadramento mais constante, analisado |
 | FOTO-P04 | 167253.jpg | Cópia comprimida; original 207588 bytes segundo app; quase preta, analisada com ressalva |
 
+## Primeira comparação FPS concluída no Lab 0.4 (24/11/2026)
+
+[**Resultados técnicos detalhados: 30/24/15 FPS, extra 30 FPS, foto, foco e movimento**](RODADA_2026-11-24/RELATORIO_COMPARACAO_FPS_LAB04.md).
+
+[**488 amostras do sensor durante os quatro MP4, sem tempos absolutos nem mídia**](RODADA_2026-11-24/amostras_fps_0_4_sanitizadas.csv).
+
+- A01 167264 MP4 30 FPS: **analisado**, 26,210 s, sensor ISO 8200 / 33,299 ms.
+- A02 167265 MP4 24 FPS: **analisado**, 24,715 s, sensor ISO 7025 / 41,668 ms.
+- A04 167266 MP4 15 FPS: **analisado**, 26,502 s, sensor ISO 7025 / 41,668 ms.
+- EXTRA30 167268 MP4 30 FPS: **analisado como cenário muito escuro**, 20,968 s; não é parte do trio comparativo.
+- F01 167267 JPG: **apenas parcial**, cópia recebida muito menor que a capturada segundo app.
+- **Importante:** A02 tem a mesma mediana de ISO/exposição de A04 e maior FPS. A diferença em AF e luminosidade não prova causalidade por FPS, pois o percurso não foi perfeitamente igual.
+- Android 16: sem giroscópio anunciado, com acelerômetro e vetor de rotação disponíveis. Rotação relativa não é coletada pelo Lab 0.4; lacuna para próxima etapa.
+
 ## Testes da próxima fase
 
 | ID | Objetivo | FPS pedido | Perfil | Resolução | Codec | Status |
 |---|---|---:|---|---|---|---|
-| A01 | FPS automatico | 30 | automatico | 720p | H264 | parcial (3 testes similares, sem ID/percurso igual) |
-| A02 | FPS automatico | 24 | automatico | 720p | H264 | pendente |
+| A01 | FPS automatico | 30 | automatico | 720p | H264 | **analisado no Lab 0.4** (167264, 785 quadros; 29.950 FPS) |
+| A02 | FPS automatico | 24 | automatico | 720p | H264 | **analisado no Lab 0.4** (167265, 592 quadros; 23.953 FPS) |
 | A03 | FPS automatico | 20 | automatico | 720p | H264 | pendente |
-| A04 | FPS automatico | 15 | automatico | 720p | H264 | pendente |
+| A04 | FPS automatico | 15 | automatico | 720p | H264 | **analisado no Lab 0.4** (167266, 398 quadros; 15.018 FPS) |
 | A05 | FPS automatico | 10 | automatico | 720p | H264 | pendente |
 | B01 | ISO exposicao | 15 | manual_ISO3200_E66ms | 720p | H264 | pendente |
 | B02 | ISO exposicao | 15 | manual_ISO6400_E66ms | 720p | H264 | pendente |
@@ -57,10 +71,10 @@ Resultados completos: [Relatório da rodada](RODADA_2026-11-24/RELATORIO.md) e [
 | E01 | Estabilidade 5min | 24 | automatico | 720p | H264 | pendente |
 | E02 | Estabilidade 5min | 24 | automatico | 1080p | H264 | pendente |
 | E03 | Home durante gravacao | 24 | automatico | 720p | H264 | pendente |
-| F01 | Foto referencia | na | automatico | JPEG | na | pendente |
+| F01 | Foto referencia | na | automatico | JPEG | na | **parcial** (167267 cópia reduzida, não JPEG original; 9 KB versus 239 KB reportados) |
 | F02 | Camera nativa | 30 | camera_Xiaomi | 1080p | nativo | pendente |
 
-**Totais:** 29 ensaios planejados para a fase Lab 0.3; 0 ensaios desta fase integralmente concluídos; A01 parcialmente coberto, mas exige comparação controlada e versão atualizada. Não misturar os P00–P06 antigos com novos IDs A–F.
+**Totais:** 29 ensaios planejados da fase do Lab; **3 ensaios A01/A02/A04 analisados no Lab 0.4**, F01 parcialmente registrado (não original) e 25 ainda pendentes. O vídeo 167268 é extra e não corresponde a um novo ID A–F.
 
 ## Procedimento para atualizar sem perder dados
 
