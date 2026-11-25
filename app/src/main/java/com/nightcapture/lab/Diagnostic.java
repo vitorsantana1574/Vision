@@ -3,6 +3,8 @@ package com.nightcapture.lab;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.pm.FeatureInfo;
+import android.hardware.Sensor;
+import android.hardware.SensorManager;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraExtensionCharacteristics;
 import android.hardware.camera2.CameraManager;
@@ -55,7 +57,8 @@ final class Diagnostic {
     }
     static JSONObject inventory(Context context) throws Exception {
         JSONObject root=new JSONObject();
-        root.put("format","NightCapture Lab camera diagnostic v0.1");
+        root.put("format","Vision Lab camera diagnostic");
+        root.put("appVersion",context.getPackageManager().getPackageInfo(context.getPackageName(),0).versionName);
         root.put("disclaimer","Android-reported capabilities are not proof of working features; confirm on device.");
         JSONObject device=new JSONObject();
         device.put("manufacturer",Build.MANUFACTURER);
@@ -67,8 +70,6 @@ final class Diagnostic {
         device.put("sdk",Build.VERSION.SDK_INT);
         device.put("release",Build.VERSION.RELEASE);
         device.put("incremental",Build.VERSION.INCREMENTAL);
-        device.put("fingerprint",Build.FINGERPRINT);
-        device.put("timeMs",System.currentTimeMillis());
         root.put("device",device);
         CameraManager cm=(CameraManager)context.getSystemService(Context.CAMERA_SERVICE);
         JSONArray cameras=new JSONArray();
@@ -96,6 +97,12 @@ final class Diagnostic {
         }
         gpu.put("relatedFeatures",features);
         root.put("graphics",gpu);
+        JSONObject motion=new JSONObject();
+        SensorManager sm=(SensorManager)context.getSystemService(Context.SENSOR_SERVICE);
+        motion.put("gyroscopeAvailable",sm!=null && sm.getDefaultSensor(Sensor.TYPE_GYROSCOPE)!=null);
+        motion.put("accelerometerAvailable",sm!=null && sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)!=null);
+        motion.put("rotationVectorAvailable",sm!=null && sm.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)!=null);
+        root.put("motionSensors",motion);
         PowerManager pm=(PowerManager)context.getSystemService(Context.POWER_SERVICE);
         if(pm!=null && Build.VERSION.SDK_INT>=29) root.put("thermalStatusAtExport",pm.getCurrentThermalStatus());
         return root;
