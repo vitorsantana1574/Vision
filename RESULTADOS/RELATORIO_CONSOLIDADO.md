@@ -1,3 +1,18 @@
+## Atualização: comparação Lab 0.4 (segunda rodada de 24/11/2026)
+
+O usuário realizou A01 (30 FPS, 167264), A02 (24 FPS, 167265), A04 (15 FPS, 167266), mais um vídeo extra muito escuro a 30 FPS (167268) e uma cópia de JPEG (167267). O JSON confirmou **Lab 0.4.0** no Redmi 15C.
+
+**Fato medido:** 24 FPS e 15 FPS tiveram **ISO mediana 7025, exposição mediana 41,668 ms**; 30 FPS teve ISO mediana 8200, exposição 33,299 ms. Logo, 24 FPS é uma hipótese melhor de equilíbrio entre luminosidade e fluidez do que 15 FPS **nesta captura automática**, sem prova definitiva de qualidade visual superior devido a cenas e movimentos variáveis.
+
+Em A04, **20/81 amostras de AF** indicaram que o foco passivo não foi encontrado, contra **2/120 em A02**. O quarto vídeo a 30 FPS também teve estados AF inconsistentes (24/128), mostrando que o problema pode estar ligado ao enquadramento e baixa iluminação e **não apenas ao FPS**.
+
+O sensor **não anuncia giroscópio**, mas oferece acelerômetro e vetor de rotação. **Lab 0.5** foi preparado para tentar medir deslocamentos angulares relativos; esse recurso ainda precisa de validação em aparelho. Nenhuma mídia foi enviada ao GitHub.
+
+- [**RELATÓRIO DETALHADO COMPARATIVO LAB 0.4**](RODADA_2026-11-24/RELATORIO_COMPARACAO_FPS_LAB04.md)
+- [**488 amostras Camera2 sanitizadas e temporizadas relativamente**](RODADA_2026-11-24/amostras_fps_0_4_sanitizadas.csv)
+- [**Atualização do progresso dos testes A01, A02 e A04**](STATUS_TESTES.md)
+- [**Tabela dos vídeos com valores reais de FPS/ISO/exposição**](videos_medicoes.csv)
+
 ## Nova rodada: 24/11/2026
 
 Foram analisados três vídeos adicionais (P07–P09, todos automáticos a ~29,95 FPS, 720p/H.264) e uma cópia JPEG (FOTO-P04). Os três MP4 são íntegros, sem lacunas evidentes de timestamp, mas contêm regiões muito escuras; todas as amostras estáveis de vídeo ficaram próximas de ISO 8200 e exposição de 33,3 ms. O arquivo JPEG recebido é muito comprimido em relação ao original indicado no diagnóstico; suas métricas devem ser interpretadas como **cópia compartilhada**, não como qualidade original do sensor.
