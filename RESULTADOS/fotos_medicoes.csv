@@ -3,3 +3,4 @@ photo_id,dimensions,approx_grayscale_mean_0_255,approx_grayscale_std,notes
 165890,1152x1536,32.72,16.76,"low light; weak contrast and chromatic noise"
 165891,1152x1536,6.39,2.25,"near black; little usable signal"
 165892,1152x1536,70.31,31.73,"brighter scene; visible objects; strong noise"
+167253,1152x1536,2.85,3.38,"received_copy_is_6900_bytes_vs_207588_original_reported_by_app; 96.77pct_gray_below10; almost_no_real_detail; app_log_ISO675_exposure33.33ms; original_not_received"
