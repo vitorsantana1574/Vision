@@ -88,8 +88,9 @@ public final class MainActivity extends Activity implements SensorEventListener 
     private long recordingStartedMs=0, recordingStartedElapsedMs=0;
     private volatile long videoFrames=0;
     private SensorManager motionManager;
-    private Sensor gyroSensor,accelSensor;
-    private long lastGyroMs=0,lastAccelMs=0;
+    private Sensor gyroSensor,accelSensor,rotationSensor;
+    private long lastGyroMs=0,lastAccelMs=0,lastRotationMs=0;
+    private float[] previousRotationMatrix=null;
     private boolean destroyed=false;
     private int mode=0, selectedResolution=0, selectedCodec=0, selectedIso=1600, selectedVideoFps=30;
     private double selectedExposureMs=50;
@@ -114,6 +115,7 @@ public final class MainActivity extends Activity implements SensorEventListener 
         if(motionManager!=null){
             gyroSensor=motionManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
             accelSensor=motionManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+            rotationSensor=motionManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
         }
         if(checkSelfPermission(Manifest.permission.CAMERA)!=PackageManager.PERMISSION_GRANTED)
             requestPermissions(new String[]{Manifest.permission.CAMERA},REQ_CAMERA);
@@ -144,7 +146,7 @@ public final class MainActivity extends Activity implements SensorEventListener 
         root.setOrientation(LinearLayout.VERTICAL);
         root.setPadding(dp(10),dp(6),dp(10),dp(5));
         root.setBackgroundColor(0xff111821);
-        TextView title=text("VISION / Lab 0.4");
+        TextView title=text("VISION / Lab 0.5");
         title.setTextSize(21);
         root.addView(title);
         status=text("Permissão da câmera necessária.");
@@ -337,6 +339,7 @@ public final class MainActivity extends Activity implements SensorEventListener 
                         if(forVideo&&starting) {
                             recorder.start();
                             videoFrames=0;lastFrameNs=0;
+                            previousRotationMatrix=null;lastRotationMs=0;
                             recordingStartedElapsedMs=android.os.SystemClock.elapsedRealtime();
                             starting=false;recording=true;recordingStartedMs=System.currentTimeMillis();
                             log("video_started",currentRecordingName+" size="+recordingSize+" mode="+MODES[mode]+" requestedFps="+selectedVideoFps+" codec="+(selectedCodec==1?"HEVC":"H264")+" isoRequested="+selectedIso+" exposureMsRequested="+selectedExposureMs+" thermal="+thermalStatus());
@@ -380,7 +383,7 @@ public final class MainActivity extends Activity implements SensorEventListener 
     private CaptureRequest request(boolean video,boolean still) throws Exception {
         CaptureRequest.Builder b=camera.createCaptureRequest(still?CameraDevice.TEMPLATE_STILL_CAPTURE:
                 video?CameraDevice.TEMPLATE_RECORD:CameraDevice.TEMPLATE_PREVIEW);
-        if(still)b.addTarget(photoReader.getSurface());
+        if(still){b.addTarget(photoReader.getSurface());b.setTag(pendingPhotoFileName);}
         else {
             b.addTarget(previewSurface);
             if(video)b.addTarget(recorder.getSurface());
@@ -453,7 +456,7 @@ public final class MainActivity extends Activity implements SensorEventListener 
             }catch(Exception ignored){ }
             long now=System.currentTimeMillis();
             if(photoReader!=null&&!recording&&Integer.valueOf(CameraMetadata.CONTROL_CAPTURE_INTENT_STILL_CAPTURE).equals(r.get(CaptureRequest.CONTROL_CAPTURE_INTENT))){
-                log("still_metadata","file="+pendingPhotoFileName+" ISO="+iso+" exposureNs="+exp);
+                log("still_metadata","file="+String.valueOf(r.getTag())+" ISO="+iso+" exposureNs="+exp);
             }
             if(now-lastHudMs>=650){
                 lastHudMs=now;
@@ -557,6 +560,7 @@ public final class MainActivity extends Activity implements SensorEventListener 
             recordingUri=null;
         }
         recording=false;starting=false;currentRecordingName=null;recordingStartedMs=0;recordingStartedElapsedMs=0;
+        previousRotationMatrix=null;
         startButton.setEnabled(true);stopButton.setEnabled(false);photoButton.setEnabled(true);
         preview.setKeepScreenOn(false);
         if(!destroyed&&camera!=null&&preview.isAvailable())configure(false);
@@ -647,21 +651,37 @@ public final class MainActivity extends Activity implements SensorEventListener 
     @Override public void onSensorChanged(SensorEvent event) {
         if(!recording||event==null||event.values.length<3||recordingStartedElapsedMs<=0)return;
         int type=event.sensor.getType();
-        if(type!=Sensor.TYPE_GYROSCOPE&&type!=Sensor.TYPE_ACCELEROMETER)return;
+        if(type!=Sensor.TYPE_GYROSCOPE&&type!=Sensor.TYPE_ACCELEROMETER&&type!=Sensor.TYPE_ROTATION_VECTOR)return;
         long now=android.os.SystemClock.elapsedRealtime();
         if(type==Sensor.TYPE_GYROSCOPE){
             if(now-lastGyroMs<100)return;
             lastGyroMs=now;
-        }else{
+        }else if(type==Sensor.TYPE_ACCELEROMETER){
             if(now-lastAccelMs<100)return;
             lastAccelMs=now;
+        }else{
+            if(now-lastRotationMs<100)return;
+            lastRotationMs=now;
         }
         try{
-            double magnitude=Math.sqrt(event.values[0]*event.values[0]+event.values[1]*event.values[1]+event.values[2]*event.values[2]);
+            double magnitude;
+            if(type==Sensor.TYPE_ROTATION_VECTOR){
+                float[] currentRotation=new float[9];
+                SensorManager.getRotationMatrixFromVector(currentRotation,event.values);
+                if(previousRotationMatrix==null){previousRotationMatrix=currentRotation;return;}
+                double trace=0;
+                for(int i=0;i<9;i++)trace+=previousRotationMatrix[i]*currentRotation[i];
+                previousRotationMatrix=currentRotation;
+                double cos=(trace-1.0)/2.0;
+                magnitude=Math.toDegrees(Math.acos(Math.max(-1.0,Math.min(1.0,cos))));
+            }else{
+                magnitude=Math.sqrt(event.values[0]*event.values[0]+event.values[1]*event.values[1]+event.values[2]*event.values[2]);
+            }
             JSONObject sample=new JSONObject();
             sample.put("clip",currentRecordingName);
             sample.put("relativeMs",Math.max(0,now-recordingStartedElapsedMs));
-            sample.put("type",type==Sensor.TYPE_GYROSCOPE?"gyro_rad_s":"accel_m_s2");
+            sample.put("type",type==Sensor.TYPE_GYROSCOPE?"gyro_rad_s":type==Sensor.TYPE_ROTATION_VECTOR?"rotation_step_deg":"accel_m_s2");
+            sample.put("accuracy",event.accuracy);
             sample.put("magnitude",magnitude);
             synchronized(sampleLock){if(motionSamples.length()<12000)motionSamples.put(sample);}
         }catch(Exception ignored){}
@@ -678,6 +698,7 @@ public final class MainActivity extends Activity implements SensorEventListener 
         if(motionManager!=null){
             if(gyroSensor!=null)motionManager.registerListener(this,gyroSensor,SensorManager.SENSOR_DELAY_GAME,background);
             if(accelSensor!=null)motionManager.registerListener(this,accelSensor,SensorManager.SENSOR_DELAY_GAME,background);
+            if(rotationSensor!=null)motionManager.registerListener(this,rotationSensor,SensorManager.SENSOR_DELAY_GAME,background);
         }
         if(manager!=null&&cameraId!=null&&preview!=null&&preview.isAvailable())openCamera();
     }
