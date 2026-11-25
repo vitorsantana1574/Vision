@@ -20,7 +20,7 @@
 | **A04** | 167266 | 15 / **15,018** | 26,502 s | 398 | 6,013 Mbps | **7025** | **41,668 ms** | 81 |
 | **EXTRA30** | 167268 | 30 / **29,950** | 20,968 s | 628 | 5,993 Mbps | **8200** | **33,299 ms** | 128 |
 
-- **239?** Não usar soma aproximada: foram **2.403 quadros efetivamente decodificados (785+592+398+628)**.
+- Foram **2.403 quadros efetivamente decodificados (785+592+398+628)**.
 - Intervalos PTS verificados por `ffprobe` quadro a quadro: A01 ~33,389 ms; A02 ~41,7 ms (pequena variação de arredondamento); A04 ~66,589 ms; EXTRA30 ~33,389 ms. **Zero intervalos >1,5× a mediana** em cada MP4.
 - Após decodificação completa e redução de cada quadro a 128×72 em escala de cinza, **não há pares consecutivos exatamente idênticos**; nenhum par teve diferença média inferior a 0,1 nível. Isso não exclui repetição de cena ou limitações do sensor.
 - As contagens `sensorFrames` do aplicativo (794, 601, 406, 636) são maiores que os quadros codificados (785, 592, 398, 628), pois há diferença entre eventos de sensor e limites de início/encerramento do arquivo. **Não chamar essa diferença de perda comprovada de quadros**.
